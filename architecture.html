@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture Document · Spot Exposure Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink: #07090c; --paper: #0b1118; --card: #0f1923; --card2: #111d28;
+  --line: #1c2d3d; --cyan: #17e8d4; --amber: #f5a623;
+  --green: #22d77a; --red: #f5455c;
+  --text: #c8dae8; --muted: #52687a; --bright: #eaf2f8;
+  --mono: 'Space Mono', monospace;
+  --head: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--paper); color: var(--text); font-family: var(--head); line-height: 1.7; }
+a { color: var(--cyan); text-decoration: none; }
+
+.page { max-width: 900px; margin: 0 auto; padding: 60px 40px; }
+
+/* COVER */
+.cover { padding: 80px 0 60px; border-bottom: 1px solid var(--line); margin-bottom: 60px; }
+.cover-eyebrow {
+  font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.16em; color: var(--cyan); margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.cover-eyebrow::before { content: ''; width: 32px; height: 1px; background: var(--cyan); }
+.cover-title { font-size: 52px; font-weight: 800; color: var(--bright); line-height: 1.1; margin-bottom: 20px; }
+.cover-title span { color: var(--cyan); }
+.cover-sub { font-size: 17px; color: var(--muted); max-width: 600px; line-height: 1.8; }
+.cover-meta {
+  margin-top: 40px; display: flex; gap: 32px; flex-wrap: wrap;
+  font-family: var(--mono); font-size: 12px;
+}
+.meta-item { display: flex; flex-direction: column; gap: 4px; }
+.meta-k { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; }
+.meta-v { color: var(--bright); font-weight: 700; }
+
+/* TOC */
+.toc {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 28px 32px; margin-bottom: 60px;
+}
+.toc-title { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--cyan); margin-bottom: 16px; }
+.toc-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.toc-list li { font-size: 15px; }
+.toc-list li a { color: var(--text); display: flex; align-items: center; gap: 10px; }
+.toc-list li a:hover { color: var(--cyan); }
+.toc-list li a::before { content: ''; width: 18px; height: 1px; background: var(--line); flex-shrink: 0; transition: background 0.2s; }
+.toc-list li a:hover::before { background: var(--cyan); }
+
+/* SECTIONS */
+.section { margin-bottom: 64px; }
+.section-num {
+  font-family: var(--mono); font-size: 11px; color: var(--cyan);
+  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px;
+}
+.section-title { font-size: 28px; font-weight: 800; color: var(--bright); margin-bottom: 20px; line-height: 1.2; }
+.section-body { font-size: 15px; color: var(--text); line-height: 1.8; }
+.section-body p { margin-bottom: 16px; }
+.section-body p:last-child { margin-bottom: 0; }
+.section-body strong { color: var(--bright); font-weight: 600; }
+
+h3 { font-size: 17px; font-weight: 700; color: var(--bright); margin: 28px 0 10px; }
+
+/* CARDS GRID */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin: 24px 0; }
+.card {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 20px 22px;
+}
+.card-icon { font-size: 24px; margin-bottom: 10px; }
+.card-title { font-weight: 700; color: var(--bright); margin-bottom: 6px; font-size: 14px; }
+.card-body { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ARCH DIAGRAM */
+.arch-diagram {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 8px; padding: 32px; margin: 24px 0;
+  font-family: var(--mono); font-size: 12px;
+}
+
+.layer {
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 16px 20px; margin-bottom: 12px;
+  position: relative;
+}
+.layer-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--muted); margin-bottom: 8px;
+}
+.layer-items { display: flex; gap: 10px; flex-wrap: wrap; }
+.layer-item {
+  background: var(--card2); border: 1px solid var(--line);
+  border-radius: 4px; padding: 6px 12px;
+  font-size: 12px; color: var(--text);
+}
+.layer-item.active { border-color: var(--cyan); color: var(--cyan); }
+.layer-item.future { border-color: var(--amber); color: var(--amber); border-style: dashed; }
+.layer-arrow {
+  text-align: center; color: var(--muted); font-size: 18px;
+  margin: -4px 0 4px;
+}
+
+/* TECH TABLE */
+.tech-table { width: 100%; border-collapse: collapse; margin: 24px 0; font-size: 14px; }
+.tech-table th {
+  text-align: left; padding: 10px 14px;
+  font-family: var(--mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); border-bottom: 1px solid var(--line); font-weight: 400;
+}
+.tech-table td { padding: 12px 14px; border-bottom: 1px solid rgba(28,45,61,0.5); }
+.tech-table tr:hover td { background: var(--card2); }
+.tech-name { color: var(--bright); font-weight: 600; font-family: var(--mono); font-size: 13px; }
+.tech-role { color: var(--text); }
+.tech-why { color: var(--muted); font-size: 13px; }
+.badge {
+  display: inline-block; font-family: var(--mono); font-size: 10px;
+  padding: 2px 7px; border-radius: 3px;
+}
+.badge.current { background: var(--cyan); color: var(--ink); }
+.badge.future { background: var(--card2); border: 1px dashed var(--amber); color: var(--amber); }
+
+/* DECISION BOXES */
+.decision { 
+  border-left: 3px solid var(--cyan); background: var(--card);
+  border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 16px 0;
+}
+.decision-q { font-weight: 700; color: var(--bright); margin-bottom: 8px; }
+.decision-a { font-size: 14px; color: var(--text); }
+
+/* FLOW */
+.flow { display: flex; align-items: center; gap: 0; flex-wrap: wrap; margin: 20px 0; }
+.flow-step {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 6px; padding: 12px 18px;
+  font-family: var(--mono); font-size: 12px; color: var(--text);
+  text-align: center; min-width: 120px;
+}
+.flow-step.active { border-color: var(--cyan); color: var(--cyan); }
+.flow-step.future { border-style: dashed; border-color: var(--amber); color: var(--amber); }
+.flow-arrow { color: var(--muted); padding: 0 8px; font-size: 14px; }
+
+/* FAQ */
+.faq { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 24px 0; }
+.faq-item { border-bottom: 1px solid var(--line); }
+.faq-item:last-child { border-bottom: none; }
+.faq-q {
+  padding: 16px 20px; font-weight: 700; color: var(--bright);
+  cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  font-size: 15px;
+}
+.faq-q:hover { background: var(--card2); }
+.faq-a { padding: 0 20px 16px; font-size: 14px; color: var(--text); display: none; line-height: 1.8; }
+.faq-item.open .faq-a { display: block; }
+.faq-item.open .faq-q::after { content: '−'; }
+.faq-q::after { content: '+'; color: var(--cyan); font-family: var(--mono); font-size: 18px; }
+
+/* CODE */
+pre {
+  background: var(--ink); border-radius: 6px; padding: 20px;
+  font-family: var(--mono); font-size: 12px; line-height: 1.8;
+  color: var(--muted); overflow-x: auto; margin: 16px 0;
+}
+code { font-family: var(--mono); font-size: 12px; }
+.hl-cyan { color: var(--cyan); }
+.hl-amber { color: var(--amber); }
+.hl-green { color: var(--green); }
+.hl-comment { color: #3d5468; }
+
+/* CALLOUT */
+.callout {
+  border-radius: 6px; padding: 16px 20px; margin: 16px 0;
+  font-size: 14px; line-height: 1.7;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.callout.info { background: rgba(23,232,212,0.07); border: 1px solid rgba(23,232,212,0.2); }
+.callout.warn { background: rgba(245,166,35,0.07); border: 1px solid rgba(245,166,35,0.2); }
+.callout-icon { font-size: 18px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-eyebrow">Architecture Document</div>
+  <div class="cover-title">Spot Exposure<br><span>Monitor</span></div>
+  <div class="cover-sub">
+    A token-level risk intelligence dashboard for CoinDCX's spot trading book.
+    Designed for present-day file-upload use with a clear upgrade path to
+    real-time data pipeline integration.
+  </div>
+  <div class="cover-meta">
+    <div class="meta-item"><div class="meta-k">Version</div><div class="meta-v">1.0.0</div></div>
+    <div class="meta-item"><div class="meta-k">Date</div><div class="meta-v">March 2026</div></div>
+    <div class="meta-item"><div class="meta-k">Stack Phase</div><div class="meta-v">Frontend-First</div></div>
+    <div class="meta-item"><div class="meta-k">Deployment</div><div class="meta-v">Railway / Netlify</div></div>
+    <div class="meta-item"><div class="meta-k">Alert Threshold</div><div class="meta-v">$50,000 USD</div></div>
+  </div>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ol class="toc-list">
+    <li><a href="#s1">1. Problem Statement &amp; Goals</a></li>
+    <li><a href="#s2">2. System Architecture Overview</a></li>
+    <li><a href="#s3">3. Tech Stack — Choices &amp; Rationale</a></li>
+    <li><a href="#s4">4. Data Flow — Current &amp; Future</a></li>
+    <li><a href="#s5">5. Dashboard Design Decisions</a></li>
+    <li><a href="#s6">6. Future: Real-Time Pipeline Integration</a></li>
+    <li><a href="#s7">7. Deployment Guide (Railway)</a></li>
+    <li><a href="#s8">8. FAQ — Tech Q&amp;A for Presentations</a></li>
+  </ol>
+</div>
+
+<!-- ─── SECTION 1 ───────────────────────────────── -->
+<div class="section" id="s1">
+  <div class="section-num">Section 01</div>
+  <div class="section-title">Problem Statement &amp; Goals</div>
+  <div class="section-body">
+    <p>
+      CoinDCX manages a large spot trading book across multiple exchanges and custody vaults
+      (Binance, Huobi, KuCoin, CoinDCX HW, Fireblocks, GateIO, etc.).
+      The existing exposure calculation lives in a manually-updated Excel sheet.
+      Risk managers need to answer three questions fast:
+    </p>
+  </div>
+
+  <div class="cards" style="margin-top:20px">
+    <div class="card">
+      <div class="card-icon">📍</div>
+      <div class="card-title">Where is our risk concentrated?</div>
+      <div class="card-body">Which tokens have the largest long or short exposure in USD terms?</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚠</div>
+      <div class="card-title">What requires immediate attention?</div>
+      <div class="card-body">Tokens with exposure above $50,000 on either side need an alert surface.</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <div class="card-title">How did exposure build up?</div>
+      <div class="card-body">Time-series view per token showing exposure trajectory over time.</div>
+    </div>
+  </div>
+
+  <div class="section-body" style="margin-top:24px">
+    <h3>Design Constraints</h3>
+    <p><strong>Phase 1 (now):</strong> Zero backend infrastructure cost. The dashboard must work by uploading the existing Excel sheet. No data should leave the user's browser.</p>
+    <p><strong>Phase 2 (future):</strong> When a real-time data engineering pipeline is built (Kafka / Flink / Spark / custom), the dashboard must accept a live feed with zero frontend rework — only the data ingestion function changes.</p>
+    <p><strong>Always:</strong> Deployable by a non-engineer on a free tier. Shareable via a URL. Maintainable without a dedicated DevOps team.</p>
+  </div>
+</div>
+
+<!-- ─── SECTION 2 ───────────────────────────────── -->
+<div class="section" id="s2">
+  <div class="section-num">Section 02</div>
+  <div class="section-title">System Architecture Overview</div>
+
+  <div class="arch-diagram">
+    <div class="layer-label">Data Sources</div>
+    <div class="layer">
+      <div class="layer-items">
+        <div class="layer-item active">📄 Excel Upload (now)</div>
+        <div class="layer-item future">🔌 REST API (Phase 2)</div>
+        <div class="layer-item future">⚡ WebSocket Stream (Phase 3)</div>
+        <div class="layer-item future">📡 Kafka Consumer (Phase 4)</div>
+      </div>
+    </div>
+
+    <div class="layer-arrow">↓ fetchData() — single ingestion function</div>
+
+    <div class="layer-label">Ingestion + Normalization</div>
+    <div class="layer">
+      <div class="layer-items">
+        <div class="layer-item active">SheetJS — xlsx → JSON</div>
+        <div class="layer-item active">normalizeRow() — schema mapping</div>
+        <div class="layer-item future">normalizeApiRow() — API schema</div>
+      </div>
+    </div>
+
+    <div class="layer-arrow">↓ Normalized token objects [ { name, exposure_usdt, price, ... } ]</div>
+
+    <div class="layer-label">State Management</div>
+    <div class="layer">
+      <div class="layer-items">
+        <div class="layer-item active">STATE.raw — all tokens</div>
+        <div class="layer-item active">STATE.filtered — view state</div>
+        <div class="layer-item active">STATE.selected — active token</div>
+      </div>
+    </div>
+
+    <div class="layer-arrow">↓ renderAll() → individual render functions</div>
+
+    <div class="layer-label">Visualisation Layer</div>
+    <div class="layer">
+      <div class="layer-items">
+        <div class="layer-item active">Treemap (long + short)</div>
+        <div class="layer-item active">Top-10 Tables</div>
+        <div class="layer-item active">Timeline Chart (Chart.js)</div>
+        <div class="layer-item active">Full Searchable Table</div>
+        <div class="layer-item active">Alert Ticker</div>
+        <div class="layer-item active">Stats Strip</div>
+      </div>
+    </div>
+
+    <div class="layer-arrow">↓ HTML / CSS / JavaScript — single file</div>
+
+    <div class="layer-label">Hosting</div>
+    <div class="layer">
+      <div class="layer-items">
+        <div class="layer-item active">Node.js file server</div>
+        <div class="layer-item active">Railway / Netlify / GitHub Pages</div>
+        <div class="layer-item future">Express + API routes (Phase 2)</div>
+        <div class="layer-item future">PostgreSQL / TimescaleDB (Phase 3)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <div class="callout-icon">💡</div>
+    <div>
+      <strong>Key design principle:</strong> The entire dashboard is a single HTML file.
+      The server's only job is to serve that file. This makes deployment trivial, 
+      cost near-zero, and the application fully portable — it can run locally, 
+      on Railway, Netlify, S3, or any CDN without modification.
+    </div>
+  </div>
+</div>
+
+<!-- ─── SECTION 3 ───────────────────────────────── -->
+<div class="section" id="s3">
+  <div class="section-num">Section 03</div>
+  <div class="section-title">Tech Stack — Choices &amp; Rationale</div>
+
+  <table class="tech-table">
+    <thead>
+      <tr>
+        <th>Component</th><th>Technology</th><th>Why this choice</th><th>Phase</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="tech-role">Excel Parsing</td>
+        <td><span class="tech-name">SheetJS (xlsx)</span></td>
+        <td class="tech-why">Runs entirely in the browser. No server round-trip. Industry standard for xlsx reading in JS. CDN-available with no build step.</td>
+        <td><span class="badge current">Now</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Charts</td>
+        <td><span class="tech-name">Chart.js 4</span></td>
+        <td class="tech-why">Lightweight (~60KB), no React required, excellent time-series support, CDN-available. Recharts/D3 require a build pipeline.</td>
+        <td><span class="badge current">Now</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Treemap</td>
+        <td><span class="tech-name">Vanilla JS / CSS</span></td>
+        <td class="tech-why">Custom squarified layout. No library dependency. Fully controllable click events and styling. Treemap libraries don't support our interaction pattern.</td>
+        <td><span class="badge current">Now</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Frontend Framework</td>
+        <td><span class="tech-name">Vanilla HTML/JS</span></td>
+        <td class="tech-why">Zero build toolchain. Deployable by drag-and-drop. No npm, webpack, or Babel. When the team grows, trivially migratable to React/Vue.</td>
+        <td><span class="badge current">Now</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Web Server</td>
+        <td><span class="tech-name">Node.js (http)</span></td>
+        <td class="tech-why">Minimal — just serves the HTML file. Later upgrades to Express to add API routes without rewriting anything.</td>
+        <td><span class="badge current">Now</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Hosting</td>
+        <td><span class="tech-name">Railway</span></td>
+        <td class="tech-why">GitHub push-to-deploy. Free $5/mo credit. Zero DevOps config. Custom domain support. Scales to containers when needed.</td>
+        <td><span class="badge current">Now</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">API Layer</td>
+        <td><span class="tech-name">Node.js + Express</span></td>
+        <td class="tech-why">When switching from file to pipeline, Express adds <code>/api/exposure/latest</code> endpoint. Same server, same deploy. No frontend changes.</td>
+        <td><span class="badge future">Phase 2</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Database</td>
+        <td><span class="tech-name">TimescaleDB / PostgreSQL</span></td>
+        <td class="tech-why">TimescaleDB is Postgres with time-series extensions. Stores snapshots from the pipeline. Native Railway support. SQL familiar to data teams.</td>
+        <td><span class="badge future">Phase 3</span></td>
+      </tr>
+      <tr>
+        <td class="tech-role">Pipeline Ingestion</td>
+        <td><span class="tech-name">Kafka + Flink / Python</span></td>
+        <td class="tech-why">Standard crypto exchange event streaming. Flink for stateful aggregations. Python producer scripts already in use at CoinDCX.</td>
+        <td><span class="badge future">Phase 4</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="decision">
+    <div class="decision-q">Why not React/Next.js from day one?</div>
+    <div class="decision-a">
+      React adds significant toolchain complexity (webpack, Babel, npm dependencies) for a dashboard that a risk manager needs to deploy in a day.
+      The vanilla-JS architecture is intentionally designed to be migratable: every render function maps directly to a React component. 
+      When the team grows or the feature set demands it, the migration is structural — not a rewrite.
+    </div>
+  </div>
+
+  <div class="decision">
+    <div class="decision-q">Why not Google Sheets / Looker / Tableau?</div>
+    <div class="decision-a">
+      Off-the-shelf BI tools don't support the custom alert ticker, inline treemap-to-chart click interactions, or the future real-time WebSocket feed.
+      Building custom means full control over interaction model, branding, and data pipeline integration — with no per-seat licensing cost.
+    </div>
+  </div>
+</div>
+
+<!-- ─── SECTION 4 ───────────────────────────────── -->
+<div class="section" id="s4">
+  <div class="section-num">Section 04</div>
+  <div class="section-title">Data Flow — Current &amp; Future</div>
+
+  <h3>Current (Phase 1) — File Upload</h3>
+  <div class="flow">
+    <div class="flow-step active">Risk Manager<br>exports .xlsx</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">Browser reads<br>file (SheetJS)</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">normalizeRow()<br>maps columns</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">STATE.raw<br>updated</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">renderAll()<br>redraws UI</div>
+  </div>
+
+  <h3>Future (Phase 2) — REST API</h3>
+  <div class="flow">
+    <div class="flow-step future">Data pipeline<br>writes to DB</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step future">Express API<br>/api/exposure</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">fetchData()<br>calls fetch()</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">normalizeApiRow()<br>same schema</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">renderAll()<br>zero change</div>
+  </div>
+
+  <h3>Future (Phase 3) — Live WebSocket</h3>
+  <div class="flow">
+    <div class="flow-step future">Kafka topic:<br>exposure_events</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step future">WS server<br>broadcasts</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">ingestLiveUpdate()<br>patches STATE</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">Targeted re-render<br>affected rows only</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step active">Sub-second<br>latency</div>
+  </div>
+
+  <div class="callout warn" style="margin-top:24px">
+    <div class="callout-icon">🔑</div>
+    <div>
+      <strong>The critical design insight:</strong> The <code>fetchData()</code> function is the only seam between the data world and the visualization world. 
+      Switching from Phase 1 to Phase 2 to Phase 3 requires changing exactly <em>one function</em>. 
+      Every chart, table, alert, and stat re-renders from the same normalized data shape regardless of source.
+    </div>
+  </div>
+
+  <h3>Data Schema (normalized token object)</h3>
+  <pre><code><span class="hl-comment">// Every data source normalizes to this shape</span>
+{
+  <span class="hl-cyan">name</span>:             <span class="hl-amber">"BTC"</span>,           <span class="hl-comment">// token symbol</span>
+  <span class="hl-cyan">exposure_usdt</span>:    <span class="hl-green">-18695.69</span>,       <span class="hl-comment">// negative = short, positive = long</span>
+  <span class="hl-cyan">price</span>:            <span class="hl-green">63519.67</span>,        <span class="hl-comment">// current USDT price</span>
+  <span class="hl-cyan">net_assets</span>:       <span class="hl-green">-0.294329</span>,       <span class="hl-comment">// qty held across all venues</span>
+  <span class="hl-cyan">binance</span>:          <span class="hl-green">0</span>,
+  <span class="hl-cyan">binance_futures</span>:  <span class="hl-green">0</span>,
+  <span class="hl-cyan">tpe</span>:              <span class="hl-green">0</span>,
+  <span class="hl-cyan">user</span>:             <span class="hl-green">0</span>,
+  <span class="hl-cyan">fb_cold</span>:          <span class="hl-green">0</span>,
+  <span class="hl-cyan">total_assets_usd</span>: <span class="hl-green">18500.00</span>,
+  <span class="hl-cyan">total_auc</span>:        <span class="hl-green">0</span>
+}</code></pre>
+</div>
+
+<!-- ─── SECTION 5 ───────────────────────────────── -->
+<div class="section" id="s5">
+  <div class="section-num">Section 05</div>
+  <div class="section-title">Dashboard Design Decisions</div>
+
+  <h3>Upload-First, No Stale Data</h3>
+  <div class="section-body">
+    <p>The dashboard loads blank. No data is embedded or cached. This was a deliberate choice:</p>
+    <ul style="margin:10px 0 10px 24px;display:flex;flex-direction:column;gap:6px">
+      <li>Forces the user to always load a fresh snapshot — no risk of acting on stale figures</li>
+      <li>No sensitive financial data committed to version control or visible in the HTML source</li>
+      <li>Clean separation: the app is code, the data is data</li>
+    </ul>
+  </div>
+
+  <h3>Alert Threshold: $50,000</h3>
+  <div class="section-body">
+    <p>The $50K threshold was set to surface material positions worth attention while filtering noise from small residual balances. This is configurable in the code as a single constant. Future enhancement: user-adjustable threshold per token category.</p>
+  </div>
+
+  <h3>Simulated Timeseries</h3>
+  <div class="section-body">
+    <p>The current timeline chart shows a <strong>simulated 30-day buildup</strong> because the Excel snapshot is a single point in time. In Phase 2, the backend will return historical snapshots from the database and this function will be replaced with a real API call. The chart UI, axis formatting, and interaction pattern will not change.</p>
+  </div>
+
+  <h3>Treemap + Table Dual View</h3>
+  <div class="section-body">
+    <p>The treemap gives spatial intuition: which tokens dominate the risk surface at a glance. The table below it gives exact figures for auditing and drilling down. Both are synchronized — selecting in either updates the timeline chart and highlights the selection in the other.</p>
+  </div>
+</div>
+
+<!-- ─── SECTION 6 ───────────────────────────────── -->
+<div class="section" id="s6">
+  <div class="section-num">Section 06</div>
+  <div class="section-title">Future: Real-Time Pipeline Integration</div>
+
+  <div class="section-body">
+    <p>The dashboard is architected to integrate with any real-time data engineering pipeline with minimal changes. Here is the target architecture:</p>
+  </div>
+
+  <pre><code><span class="hl-comment">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="hl-comment">│                    DATA ENGINEERING LAYER                   │</span>
+<span class="hl-comment">└─────────────────────────────────────────────────────────────┘</span>
+
+Exchange APIs ──→  <span class="hl-cyan">Kafka Producer</span>  ──→  Topic: exposure_raw
+                       ↓
+                  <span class="hl-cyan">Flink / Spark</span>  ──→  Aggregation, netting,
+                       ↓                    position calculation
+               <span class="hl-amber">TimescaleDB</span>    ──→  exposure_snapshots table
+                       ↓
+            <span class="hl-cyan">Express API</span>    ──→  GET /api/exposure/latest
+                       ↓                    GET /api/exposure/history?token=BTC
+               <span class="hl-green">WebSocket</span>    ──→  ws://api/exposure/stream
+                       ↓
+        <span class="hl-cyan">fetchData()</span>    ──→  Same normalized schema
+                       ↓
+            Dashboard renders (zero change)</code></pre>
+
+  <div class="callout info">
+    <div class="callout-icon">📋</div>
+    <div>
+      <strong>Engineering work required for Phase 2:</strong>
+      (1) Deploy TimescaleDB on Railway. 
+      (2) Write a Python ingestor that reads exchange APIs and writes to the DB. 
+      (3) Add 2 Express routes to the existing server.js. 
+      (4) Change one line in <code>fetchData()</code> in the dashboard.
+      The entire frontend reuses as-is.
+    </div>
+  </div>
+</div>
+
+<!-- ─── SECTION 7 ───────────────────────────────── -->
+<div class="section" id="s7">
+  <div class="section-num">Section 07</div>
+  <div class="section-title">Deployment (Railway)</div>
+
+  <h3>Project Structure</h3>
+  <pre><code>exposure-dashboard/
+├── <span class="hl-cyan">index.html</span>          ← the entire dashboard
+├── <span class="hl-amber">server.js</span>           ← 15-line Node.js file server
+└── <span class="hl-green">package.json</span>        ← { "start": "node server.js" }</code></pre>
+
+  <h3>server.js</h3>
+  <pre><code><span class="hl-cyan">const</span> http = require(<span class="hl-amber">'http'</span>);
+<span class="hl-cyan">const</span> fs   = require(<span class="hl-amber">'fs'</span>);
+<span class="hl-cyan">const</span> path = require(<span class="hl-amber">'path'</span>);
+
+<span class="hl-cyan">const</span> PORT = process.env.PORT || <span class="hl-green">3000</span>;
+
+http.createServer((req, res) => {
+  fs.readFile(path.join(__dirname, <span class="hl-amber">'index.html'</span>), (err, data) => {
+    if (err) { res.writeHead(<span class="hl-green">404</span>); res.end(<span class="hl-amber">'Not found'</span>); return; }
+    res.writeHead(<span class="hl-green">200</span>, { <span class="hl-amber">'Content-Type'</span>: <span class="hl-amber">'text/html'</span> });
+    res.end(data);
+  });
+}).listen(PORT, () => console.log(<span class="hl-amber">`Running on port ${PORT}`</span>));</code></pre>
+
+  <h3>Deploy Steps</h3>
+  <ol style="margin:16px 0 0 24px;display:flex;flex-direction:column;gap:10px;font-size:14px">
+    <li>Push folder to a <strong>private</strong> GitHub repo</li>
+    <li>Go to railway.app → New Project → Deploy from GitHub</li>
+    <li>Select the repo → Railway auto-detects Node.js → deploys</li>
+    <li>Settings → Domains → Generate Domain → share the URL</li>
+  </ol>
+</div>
+
+<!-- ─── SECTION 8 ───────────────────────────────── -->
+<div class="section" id="s8">
+  <div class="section-num">Section 08</div>
+  <div class="section-title">FAQ — Tech Q&amp;A for Presentations</div>
+
+  <div class="faq">
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Is the financial data safe? Where is it stored?</div>
+      <div class="faq-a">Data never leaves the user's browser. When you upload the Excel file, it is read by JavaScript running locally on your machine. Nothing is transmitted to any server. The server's only job is to serve the HTML file itself — it never receives or processes any exposure data. This is verifiable by inspecting network traffic in browser DevTools.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How do we switch to real-time data without rebuilding the dashboard?</div>
+      <div class="faq-a">The <code>fetchData()</code> function is the single integration point. In Phase 1 it reads the file. In Phase 2 it calls <code>fetch('/api/exposure/latest')</code>. In Phase 3 it subscribes to a WebSocket. The 2,000 lines of dashboard code — charts, tables, alerts, treemap — remain entirely unchanged. Only the one function that gets data changes.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Why not use a BI tool like Tableau or Looker?</div>
+      <div class="faq-a">BI tools are excellent for ad-hoc analysis but have fundamental limitations for this use case: (1) They cannot implement the custom alert ticker and click-to-timeline interaction pattern. (2) They have per-seat licensing costs. (3) They cannot be embedded in internal tooling or extended with custom logic. (4) They cannot connect to arbitrary WebSocket streams. A custom dashboard costs engineering time upfront but provides complete control and zero ongoing cost.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">What is the total cost to run this?</div>
+      <div class="faq-a">Phase 1: $0. Railway's free tier provides $5/month in compute credits, which is more than sufficient to serve a static HTML file. Netlify's free tier costs $0. Phase 2 (with TimescaleDB): approximately $15–25/month on Railway (hobby plan for the DB). Phase 3 (with Kafka): $50–200/month depending on message volume and cloud provider.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">How does the treemap sizing work?</div>
+      <div class="faq-a">Each token's rectangle area is proportional to its absolute exposure in USD. The largest exposure gets the most visual space. Tokens are arranged in a 2-row layout for the top 10. Long positions are rendered in shades of green, short positions in shades of red. Clicking any cell selects that token and loads its timeline chart.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Why is the timeline chart simulated?</div>
+      <div class="faq-a">The Excel sheet is a point-in-time snapshot with no historical data. The simulated timeseries shows what the buildup curve would look like with real historical snapshots. Once the pipeline stores daily/hourly snapshots in a database, the chart function fetches real data from <code>/api/exposure/history?token=BTC&days=30</code>. The chart rendering code does not change — only the data source changes.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="this.parentElement.classList.toggle('open')">Can multiple users view the dashboard simultaneously?</div>
+      <div class="faq-a">Yes. The server serves a static HTML file with no shared state — each user's session is entirely independent, running in their own browser. There is no database or session management in Phase 1. In Phase 2, the database stores the canonical exposure data and all users see the same figures via the API.</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /page -->
+
+<script>
+// Smooth scroll for TOC
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+</body>
+</html>

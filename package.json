@@ -1,0 +1,16 @@
+{
+  "name": "spot-exposure-monitor",
+  "version": "1.0.0",
+  "description": "CoinDCX token-level spot exposure risk dashboard",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["crypto", "risk", "dashboard", "exposure"],
+  "license": "UNLICENSED",
+  "private": true
+}
